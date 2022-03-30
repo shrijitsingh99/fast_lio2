@@ -135,7 +135,7 @@ nav_msgs::Odometry odomAftMapped;
 geometry_msgs::Quaternion geoQuat;
 geometry_msgs::PoseStamped msg_body_pose;
 
-shared_ptr<Preprocess> p_pre(new Preprocess());
+shared_ptr<Preprocess> p_pre;
 shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
 void SigHandle(int sig)
@@ -297,39 +297,6 @@ void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
 
 double timediff_lidar_wrt_imu = 0.0;
 bool   timediff_set_flg = false;
-void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg) 
-{
-    mtx_buffer.lock();
-    double preprocess_start_time = omp_get_wtime();
-    scan_count ++;
-    if (msg->header.stamp.toSec() < last_timestamp_lidar)
-    {
-        ROS_ERROR("lidar loop back, clear buffer");
-        lidar_buffer.clear();
-    }
-    last_timestamp_lidar = msg->header.stamp.toSec();
-    
-    if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty() )
-    {
-        printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n",last_timestamp_imu, last_timestamp_lidar);
-    }
-
-    if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
-    {
-        timediff_set_flg = true;
-        timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu;
-        printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
-    }
-
-    PointCloudXYZI::Ptr  ptr(new PointCloudXYZI());
-    p_pre->process(msg, ptr);
-    lidar_buffer.push_back(ptr);
-    time_buffer.push_back(last_timestamp_lidar);
-    
-    s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
-    mtx_buffer.unlock();
-    sig_buffer.notify_all();
-}
 
 void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in) 
 {
@@ -749,40 +716,42 @@ void h_share_model(state_ikfom &s, esekfom::dyn_share_datastruct<double> &ekfom_
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "laserMapping");
-    ros::NodeHandle nh;
+    std::shared_ptr<ros::NodeHandle> nh = std::make_shared<ros::NodeHandle>();
 
-    nh.param<bool>("publish/path_en",path_en, true);
-    nh.param<bool>("publish/scan_publish_en",scan_pub_en, true);
-    nh.param<bool>("publish/dense_publish_en",dense_pub_en, true);
-    nh.param<bool>("publish/scan_bodyframe_pub_en",scan_body_pub_en, true);
-    nh.param<int>("max_iteration",NUM_MAX_ITERATIONS,4);
-    nh.param<string>("map_file_path",map_file_path,"");
-    nh.param<string>("common/lid_topic",lid_topic,"/livox/lidar");
-    nh.param<string>("common/imu_topic", imu_topic,"/livox/imu");
-    nh.param<bool>("common/time_sync_en", time_sync_en, false);
-    nh.param<double>("filter_size_corner",filter_size_corner_min,0.5);
-    nh.param<double>("filter_size_surf",filter_size_surf_min,0.5);
-    nh.param<double>("filter_size_map",filter_size_map_min,0.5);
-    nh.param<double>("cube_side_length",cube_len,200);
-    nh.param<float>("mapping/det_range",DET_RANGE,300.f);
-    nh.param<double>("mapping/fov_degree",fov_deg,180);
-    nh.param<double>("mapping/gyr_cov",gyr_cov,0.1);
-    nh.param<double>("mapping/acc_cov",acc_cov,0.1);
-    nh.param<double>("mapping/b_gyr_cov",b_gyr_cov,0.0001);
-    nh.param<double>("mapping/b_acc_cov",b_acc_cov,0.0001);
-    nh.param<double>("preprocess/blind", p_pre->blind, 0.01);
-    nh.param<int>("preprocess/lidar_type", p_pre->lidar_type, AVIA);
-    nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
-    nh.param<int>("preprocess/timestamp_unit", p_pre->time_unit, US);
-    nh.param<int>("preprocess/scan_rate", p_pre->SCAN_RATE, 10);
-    nh.param<int>("point_filter_num", p_pre->point_filter_num, 2);
-    nh.param<bool>("feature_extract_enable", p_pre->feature_enabled, false);
-    nh.param<bool>("runtime_pos_log_enable", runtime_pos_log, 0);
-    nh.param<bool>("mapping/extrinsic_est_en", extrinsic_est_en, true);
-    nh.param<bool>("pcd_save/pcd_save_en", pcd_save_en, false);
-    nh.param<int>("pcd_save/interval", pcd_save_interval, -1);
-    nh.param<vector<double>>("mapping/extrinsic_T", extrinT, vector<double>());
-    nh.param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
+    p_pre = std::make_shared<Preprocess>(nh);
+
+    nh->param<bool>("publish/path_en",path_en, true);
+    nh->param<bool>("publish/scan_publish_en",scan_pub_en, true);
+    nh->param<bool>("publish/dense_publish_en",dense_pub_en, true);
+    nh->param<bool>("publish/scan_bodyframe_pub_en",scan_body_pub_en, true);
+    nh->param<int>("max_iteration",NUM_MAX_ITERATIONS,4);
+    nh->param<string>("map_file_path",map_file_path,"");
+    nh->param<string>("common/lid_topic",lid_topic,"/livox/lidar");
+    nh->param<string>("common/imu_topic", imu_topic,"/livox/imu");
+    nh->param<bool>("common/time_sync_en", time_sync_en, false);
+    nh->param<double>("filter_size_corner",filter_size_corner_min,0.5);
+    nh->param<double>("filter_size_surf",filter_size_surf_min,0.5);
+    nh->param<double>("filter_size_map",filter_size_map_min,0.5);
+    nh->param<double>("cube_side_length",cube_len,200);
+    nh->param<float>("mapping/det_range",DET_RANGE,300.f);
+    nh->param<double>("mapping/fov_degree",fov_deg,180);
+    nh->param<double>("mapping/gyr_cov",gyr_cov,0.1);
+    nh->param<double>("mapping/acc_cov",acc_cov,0.1);
+    nh->param<double>("mapping/b_gyr_cov",b_gyr_cov,0.0001);
+    nh->param<double>("mapping/b_acc_cov",b_acc_cov,0.0001);
+    nh->param<double>("preprocess/blind", p_pre->blind, 0.01);
+    nh->param<int>("preprocess/lidar_type", p_pre->lidar_type, VELO16);
+    nh->param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
+    nh->param<int>("preprocess/timestamp_unit", p_pre->time_unit, US);
+    nh->param<int>("preprocess/scan_rate", p_pre->SCAN_RATE, 10);
+    nh->param<int>("point_filter_num", p_pre->point_filter_num, 2);
+    nh->param<bool>("feature_extract_enable", p_pre->feature_enabled, false);
+    nh->param<bool>("runtime_pos_log_enable", runtime_pos_log, 0);
+    nh->param<bool>("mapping/extrinsic_est_en", extrinsic_est_en, true);
+    nh->param<bool>("pcd_save/pcd_save_en", pcd_save_en, false);
+    nh->param<int>("pcd_save/interval", pcd_save_interval, -1);
+    nh->param<vector<double>>("mapping/extrinsic_T", extrinT, vector<double>());
+    nh->param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
     cout<<"p_pre->lidar_type "<<p_pre->lidar_type<<endl;
     
     path.header.stamp    = ros::Time::now();
@@ -832,21 +801,19 @@ int main(int argc, char** argv)
         cout << "~~~~"<<ROOT_DIR<<" doesn't exist" << endl;
 
     /*** ROS subscribe initialization ***/
-    ros::Subscriber sub_pcl = p_pre->lidar_type == AVIA ? \
-        nh.subscribe(lid_topic, 200000, livox_pcl_cbk) : \
-        nh.subscribe(lid_topic, 200000, standard_pcl_cbk);
-    ros::Subscriber sub_imu = nh.subscribe(imu_topic, 200000, imu_cbk);
-    ros::Publisher pubLaserCloudFull = nh.advertise<sensor_msgs::PointCloud2>
+    ros::Subscriber sub_pcl = nh->subscribe(lid_topic, 200000, standard_pcl_cbk);
+    ros::Subscriber sub_imu = nh->subscribe(imu_topic, 200000, imu_cbk);
+    ros::Publisher pubLaserCloudFull = nh->advertise<sensor_msgs::PointCloud2>
             ("/cloud_registered", 100000);
-    ros::Publisher pubLaserCloudFull_body = nh.advertise<sensor_msgs::PointCloud2>
+    ros::Publisher pubLaserCloudFull_body = nh->advertise<sensor_msgs::PointCloud2>
             ("/cloud_registered_body", 100000);
-    ros::Publisher pubLaserCloudEffect = nh.advertise<sensor_msgs::PointCloud2>
+    ros::Publisher pubLaserCloudEffect = nh->advertise<sensor_msgs::PointCloud2>
             ("/cloud_effected", 100000);
-    ros::Publisher pubLaserCloudMap = nh.advertise<sensor_msgs::PointCloud2>
+    ros::Publisher pubLaserCloudMap = nh->advertise<sensor_msgs::PointCloud2>
             ("/Laser_map", 100000);
-    ros::Publisher pubOdomAftMapped = nh.advertise<nav_msgs::Odometry> 
+    ros::Publisher pubOdomAftMapped = nh->advertise<nav_msgs::Odometry> 
             ("/Odometry", 100000);
-    ros::Publisher pubPath          = nh.advertise<nav_msgs::Path> 
+    ros::Publisher pubPath          = nh->advertise<nav_msgs::Path> 
             ("/path", 100000);
 //------------------------------------------------------------------------------------------------------
     signal(SIGINT, SigHandle);
