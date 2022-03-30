@@ -5,31 +5,13 @@
 
 Preprocess::Preprocess(std::weak_ptr<ros::NodeHandle> parent)
   :feature_enabled(0), lidar_type(VELO16), blind(0.01), point_filter_num(1),
-  feature_extraction(pl_corn, pl_surf, point_filter_num, blind, group_size, jump_up_limit, jump_down_limit, cos160, smallp_intersect, smallp_ratio, disA, disB, inf_bound, limit_maxmin, p2l_ratio, vx, vy, vz, edgea, edgeb)
+  feature_extraction(pl_corn, pl_surf, point_filter_num, blind, vx, vy, vz)
 {
-  inf_bound = 10;
   N_SCANS   = 6;
   SCAN_RATE = 10;
-  group_size = 8;
-  disA = 0.01;
-  disA = 0.1; // B?
-  p2l_ratio = 225;
   limit_maxmid =6.25;
   limit_midmin =6.25;
-  limit_maxmin = 3.24;
-  jump_up_limit = 170.0;
-  jump_down_limit = 8.0;
-  cos160 = 160.0;
-  edgea = 2;
-  edgeb = 0.1;
-  smallp_intersect = 172.5;
-  smallp_ratio = 1.2;
   given_offset_time = false;
-
-  jump_up_limit = cos(jump_up_limit/180*M_PI);
-  jump_down_limit = cos(jump_down_limit/180*M_PI);
-  cos160 = cos(cos160/180*M_PI);
-  smallp_intersect = cos(smallp_intersect/180*M_PI);
 }
 
 Preprocess::~Preprocess() {}
@@ -358,14 +340,26 @@ void Preprocess::pub_func(PointCloudXYZI &pl, const ros::Time &ct)
   output.header.stamp = ct;
 }
 
-FeatureExtraction::FeatureExtraction(PointCloudXYZI &pl_corn_, PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, int &group_size_, double &jump_up_limit_, double &jump_down_limit_, double &cos160_, double &smallp_intersect_, double &smallp_ratio_, double &disA_, double &disB_, double &inf_bound_, double &limit_maxmin_, double &p2l_ratio_, double &vx_, double &vy_, double &vz_, double &edgea_, double &edgeb_):
-pl_corn(pl_corn_), pl_surf(pl_surf_), point_filter_num(point_filter_num_), 
-blind(blind_), group_size(group_size_), jump_up_limit(jump_up_limit_), jump_down_limit(jump_down_limit_), 
-cos160(cos160_), 
-smallp_intersect(smallp_intersect_), smallp_ratio(smallp_ratio_), disA(disA_), 
-disB(disB_), inf_bound(inf_bound_), limit_maxmin(limit_maxmin_), p2l_ratio(p2l_ratio_), 
-vx(vx_), vy(vy_), vz(vz_), edgea(edgea_), edgeb(edgeb_)
-{}
+
+FeatureExtraction::FeatureExtraction(PointCloudXYZI &pl_corn_, PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, double &vx_, double &vy_, double &vz_):
+pl_corn(pl_corn_), pl_surf(pl_surf_), 
+point_filter_num(point_filter_num_), 
+blind(blind_), 
+vx(vx_), vy(vy_), vz(vz_)
+{
+  group_size = 8;
+  inf_bound = 10;
+  jump_up_limit = cos(170.0/180*M_PI);
+  jump_down_limit = cos(8.0/180*M_PI);
+  cos160 = cos(160.0/180*M_PI);
+  smallp_intersect = cos(172.5/180*M_PI);
+  smallp_ratio = 1.2;
+  disA = 0.1;
+  limit_maxmin = 3.24;
+  p2l_ratio = 225;
+  edgea = 2;
+  edgeb = 0.1;
+}
 
 FeatureExtraction::~FeatureExtraction() {}
 
