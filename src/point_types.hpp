@@ -1,6 +1,9 @@
 #pragma once
 
-#include <sensor_msgs/PointCloud2.h>
+#pragma once
+#define PCL_NO_PRECOMPILE
+#include <pcl/point_types.h>
+#include <Eigen/Core>
 
 enum Feature{Nor, Poss_Plane, Real_Plane, Edge_Jump, Edge_Plane, Wire, ZeroPoint};
 enum Surround{Prev, Next};

@@ -57,7 +57,7 @@
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/Vector3.h>
 #include <livox_ros_driver/CustomMsg.h>
-#include "preprocess.h"
+#include "preprocess.hpp"
 #include <ikd-Tree/ikd_Tree.h>
 
 #define INIT_TIME           (0.1)
@@ -285,8 +285,7 @@ void standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
         lidar_buffer.clear();
     }
 
-    PointCloudXYZI::Ptr  ptr(new PointCloudXYZI());
-    p_pre->process(msg, ptr);
+    PointCloudXYZI::Ptr ptr = p_pre->process(msg);
     lidar_buffer.push_back(ptr);
     time_buffer.push_back(msg->header.stamp.toSec());
     last_timestamp_lidar = msg->header.stamp.toSec();
@@ -739,20 +738,12 @@ int main(int argc, char** argv)
     nh->param<double>("mapping/acc_cov",acc_cov,0.1);
     nh->param<double>("mapping/b_gyr_cov",b_gyr_cov,0.0001);
     nh->param<double>("mapping/b_acc_cov",b_acc_cov,0.0001);
-    nh->param<double>("preprocess/blind", p_pre->blind, 0.01);
-    nh->param<int>("preprocess/lidar_type", p_pre->lidar_type, VELO16);
-    nh->param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
-    nh->param<int>("preprocess/timestamp_unit", p_pre->time_unit, US);
-    nh->param<int>("preprocess/scan_rate", p_pre->SCAN_RATE, 10);
-    nh->param<int>("point_filter_num", p_pre->point_filter_num, 2);
-    nh->param<bool>("feature_extract_enable", p_pre->feature_enabled, false);
     nh->param<bool>("runtime_pos_log_enable", runtime_pos_log, 0);
     nh->param<bool>("mapping/extrinsic_est_en", extrinsic_est_en, true);
     nh->param<bool>("pcd_save/pcd_save_en", pcd_save_en, false);
     nh->param<int>("pcd_save/interval", pcd_save_interval, -1);
     nh->param<vector<double>>("mapping/extrinsic_T", extrinT, vector<double>());
     nh->param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
-    cout<<"p_pre->lidar_type "<<p_pre->lidar_type<<endl;
     
     path.header.stamp    = ros::Time::now();
     path.header.frame_id ="camera_init";

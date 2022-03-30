@@ -1,48 +1,27 @@
-#include "preprocess.h"
+#include "preprocess.hpp"
 
 #define RETURN0     0x00
 #define RETURN0AND1 0x10
 
 Preprocess::Preprocess(std::weak_ptr<ros::NodeHandle> parent)
-  :feature_enabled(0), lidar_type(VELO16), blind(0.01), point_filter_num(1)
 {
-  inf_bound = 10;
-  N_SCANS   = 6;
-  SCAN_RATE = 10;
-  group_size = 8;
-  disA = 0.01;
-  disA = 0.1; // B?
-  p2l_ratio = 225;
-  limit_maxmid =6.25;
-  limit_midmin =6.25;
-  limit_maxmin = 3.24;
-  jump_up_limit = 170.0;
-  jump_down_limit = 8.0;
-  cos160 = 160.0;
-  edgea = 2;
-  edgeb = 0.1;
-  smallp_intersect = 172.5;
-  smallp_ratio = 1.2;
-  given_offset_time = false;
+  auto node = parent.lock();
+  if (!node) {
+    throw std::runtime_error{"Failed to lock node"};
+  }
 
-  jump_up_limit = cos(jump_up_limit/180*M_PI);
-  jump_down_limit = cos(jump_down_limit/180*M_PI);
-  cos160 = cos(cos160/180*M_PI);
-  smallp_intersect = cos(smallp_intersect/180*M_PI);
-}
+  node->param<double>("preprocess/blind", blind, 0.01);
+  node->param<int>("preprocess/lidar_type", lidar_type, VELO16);
+  node->param<int>("preprocess/scan_line", N_SCANS, 16);
+  node->param<int>("preprocess/timestamp_unit", time_unit, US);
+  node->param<int>("preprocess/scan_rate", SCAN_RATE, 10);
+  // TODO: (shrijitsingh99) Add preprocess namespace
+  node->param<int>("point_filter_num", point_filter_num, 2);
+  node->param<bool>("feature_extract_enable", feature_enabled, false);
+  
+  // TODO: (shrijitsingh99) Print out LiDAR type string
+  ROS_INFO("Initalizing LiDAR of type %d", lidar_type);
 
-Preprocess::~Preprocess() {}
-
-void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num)
-{
-  feature_enabled = feat_en;
-  lidar_type = lid_type;
-  blind = bld;
-  point_filter_num = pfilt_num;
-}
-
-void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out)
-{
   switch (time_unit)
   {
     case SEC:
@@ -62,6 +41,33 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
       break;
   }
 
+  inf_bound = 10;
+  group_size = 8;
+  disA = 0.01;
+  disA = 0.1; // B?
+  p2l_ratio = 225;
+  limit_maxmin = 3.24;
+  jump_up_limit = 170.0;
+  jump_down_limit = 8.0;
+  cos160 = 160.0;
+  edgea = 2;
+  edgeb = 0.1;
+  smallp_intersect = 172.5;
+  smallp_ratio = 1.2;
+  given_offset_time = false;
+
+  jump_up_limit = cos(jump_up_limit/180*M_PI);
+  jump_down_limit = cos(jump_down_limit/180*M_PI);
+  cos160 = cos(cos160/180*M_PI);
+  smallp_intersect = cos(smallp_intersect/180*M_PI);
+}
+
+Preprocess::~Preprocess() {}
+
+PointCloudXYZI::Ptr Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
+  auto pcl_out = pcl::make_shared<PointCloudXYZI>();
+
   switch (lidar_type)
   {
   case OUST64:
@@ -76,7 +82,9 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
     printf("Error LiDAR Type");
     break;
   }
+
   *pcl_out = pl_surf;
+  return pcl_out;
 }
 
 void Preprocess::oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)

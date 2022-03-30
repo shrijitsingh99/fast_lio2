@@ -22,8 +22,7 @@ class Preprocess
   Preprocess(std::weak_ptr<ros::NodeHandle> parent);
   ~Preprocess();
   
-  void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
-  void set(bool feat_en, int lid_type, double bld, int pfilt_num);
+  PointCloudXYZI::Ptr process(const sensor_msgs::PointCloud2::ConstPtr &msg);
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;
   PointCloudXYZI pl_full, pl_corn, pl_surf;
@@ -47,7 +46,7 @@ class Preprocess
   
   int group_size;
   double disA, disB, inf_bound;
-  double limit_maxmid, limit_midmin, limit_maxmin;
+  double limit_maxmin;
   double p2l_ratio;
   double jump_up_limit, jump_down_limit;
   double cos160;
