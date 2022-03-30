@@ -5,7 +5,7 @@
 
 Preprocess::Preprocess(std::weak_ptr<ros::NodeHandle> parent)
   :feature_enabled(0), lidar_type(VELO16), blind(0.01), point_filter_num(1),
-  feature_extraction(pl_corn, pl_surf, point_filter_num, blind, vx, vy, vz)
+  feature_extraction(pl_surf, point_filter_num, blind, vx, vy, vz)
 {
   N_SCANS   = 6;
   SCAN_RATE = 10;
@@ -65,12 +65,11 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
 void Preprocess::oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
 {
   pl_surf.clear();
-  pl_corn.clear();
   pl_full.clear();
   pcl::PointCloud<ouster_ros::Point> pl_orig;
   pcl::fromROSMsg(*msg, pl_orig);
   int plsize = pl_orig.size();
-  pl_corn.reserve(plsize);
+  feature_extraction.corner_reset(plsize);
   pl_surf.reserve(plsize);
   if (feature_enabled)
   {
@@ -160,7 +159,7 @@ void Preprocess::oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
 void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
 {
     pl_surf.clear();
-    pl_corn.clear();
+    feature_extraction.corner_reset(0);
     pl_full.clear();
 
     pcl::PointCloud<velodyne_ros::Point> pl_orig;

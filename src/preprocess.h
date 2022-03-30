@@ -25,7 +25,7 @@ class Preprocess
   void set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;
-  PointCloudXYZI pl_full, pl_corn, pl_surf;
+  PointCloudXYZI pl_full, pl_surf;
   PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
   vector<orgtype> typess[128]; //maximum 128 line lidar
   float time_unit_scale;
