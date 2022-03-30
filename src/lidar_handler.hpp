@@ -21,7 +21,7 @@ class LidarHandler
 {
 public:
   LidarHandler(LidarConfig cfg)
-  : cfg_(cfg) {}
+  : cfg_(cfg), feature_extraction(pl_surf, cfg_.point_filter_num, cfg_.blind, vx, vy, vz) {}
   virtual ~LidarHandler() = default;
   virtual PointCloudXYZI process(const sensor_msgs::PointCloud2::ConstPtr & msg) {}
 
@@ -33,5 +33,7 @@ protected:
   std::vector<orgtype> typess[128]; //maximum 128 line lidar
 
   double vx, vy, vz;
+
+  FeatureExtraction feature_extraction;
 
 };

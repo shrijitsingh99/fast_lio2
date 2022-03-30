@@ -66,7 +66,7 @@ public:
         }
         types[linesize].range = sqrt(
           pl[linesize].x * pl[linesize].x + pl[linesize].y * pl[linesize].y);
-        // give_feature(pl, types);
+        feature_extraction.give_feature(pl, types);
       }
     } else {
       double time_stamp = msg->header.stamp.toSec();

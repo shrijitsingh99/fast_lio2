@@ -114,9 +114,7 @@ public:
         }
         types[linesize].range = sqrt(
           pl[linesize].x * pl[linesize].x + pl[linesize].y * pl[linesize].y);
-
-        // TODO: (shrijitsingh99) Enable after integrating feature extraction
-        // give_feature(pl, types);
+        feature_extraction.give_feature(pl, types);
       }
     } else {
       for (int i = 0; i < plsize; i++) {
