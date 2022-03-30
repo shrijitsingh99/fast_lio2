@@ -55,3 +55,27 @@ class Preprocess
   double smallp_intersect, smallp_ratio;
   double vx, vy, vz;
 };
+
+class FeatureExtraction{
+  FeatureExtraction(PointCloudXYZI &pl_corn_, PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, int &group_size_, double &jump_up_limit_, double &jump_down_limit_, double &cos160_, double &smallp_intersect_, double &smallp_ratio_, double &disA_, double &disB_, double &inf_bound_, double &limit_maxmin_, double &p2l_ratio_, double &vx_, double &vy_, double &vz_, double &edgea_, double &edgeb_);
+  ~FeatureExtraction();
+
+  // Variables needed from other class
+  PointCloudXYZI &pl_corn, &pl_surf;
+  int &point_filter_num;
+  double &blind;
+  int &group_size;
+  double &jump_up_limit, &jump_down_limit;
+  double &cos160;
+  double &smallp_intersect;
+  double &smallp_ratio;
+  double &disA,&disB,&inf_bound;
+  double &limit_maxmin;
+  double &p2l_ratio;
+  double &vx,&vy,&vz;
+  double &edgea,&edgeb;
+
+  void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
+  int  plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
+  bool edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir);
+};
