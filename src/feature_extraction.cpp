@@ -14,6 +14,7 @@ vx(vx_), vy(vy_), vz(vz_)
   smallp_intersect = cos(172.5/180*M_PI);
   smallp_ratio = 1.2;
   disA = 0.1;
+  disB = 0;
   limit_maxmin = 3.24;
   p2l_ratio = 225;
   edgea = 2;
