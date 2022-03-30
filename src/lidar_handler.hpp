@@ -6,7 +6,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include "point_types.hpp"
-#include "feature_extraction.h"
+#include "feature_extraction.hpp"
 
 
 struct LidarConfig

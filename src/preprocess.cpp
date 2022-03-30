@@ -47,11 +47,9 @@ Preprocess::Preprocess(std::weak_ptr<ros::NodeHandle> parent)
     case OUST64:
       lidar_handler_ = std::make_unique<OusterHandler>(lidar_cfg);
       break;
-
     case VELO16:
       lidar_handler_ = std::make_unique<VelodyneHandler>(lidar_cfg);
       break;
-
     default:
       throw std::runtime_error{"Invalid LiDAR type"};
       break;

@@ -1,6 +1,6 @@
 common:
-    lid_topic:  "/velodyne_points"
-    imu_topic:  "/imu/data"
+    lid_topic:  "/points_raw"
+    imu_topic:  "/imu_raw"
     time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
     
 preprocess:

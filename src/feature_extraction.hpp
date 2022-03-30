@@ -1,8 +1,6 @@
 #pragma once
 
-#include <ros/ros.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <sensor_msgs/PointCloud2.h>
 #include "point_types.hpp"
 
 using namespace std;
@@ -12,21 +10,23 @@ typedef pcl::PointCloud<PointType> PointCloudXYZI;
 
 class FeatureExtraction{
   public:
-  FeatureExtraction(PointCloudXYZI &pl_corn_, PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, double &vx_, double &vy_, double &vz_);
+  FeatureExtraction(PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, double &vx_, double &vy_, double &vz_);
   ~FeatureExtraction();
 
   void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
   int  plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
   bool edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir);
+  void corner_reset(int plsize);
 
   private:
   // Variables needed from other class
-  PointCloudXYZI &pl_corn, &pl_surf;
+  PointCloudXYZI &pl_surf;
   int &point_filter_num;
   double &blind;
   double &vx,&vy,&vz;
 
   // Local variables
+  PointCloudXYZI pl_corn;
   int group_size;
   double jump_up_limit, jump_down_limit;
   double cos160;

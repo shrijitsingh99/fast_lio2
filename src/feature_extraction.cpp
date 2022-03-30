@@ -1,7 +1,7 @@
-#include "feature_extraction.h"
+#include "feature_extraction.hpp"
 
-FeatureExtraction::FeatureExtraction(PointCloudXYZI &pl_corn_, PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, double &vx_, double &vy_, double &vz_):
-pl_corn(pl_corn_), pl_surf(pl_surf_), 
+FeatureExtraction::FeatureExtraction(PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, double &vx_, double &vy_, double &vz_):
+pl_surf(pl_surf_), 
 point_filter_num(point_filter_num_), 
 blind(blind_), 
 vx(vx_), vy(vy_), vz(vz_)
@@ -14,6 +14,7 @@ vx(vx_), vy(vy_), vz(vz_)
   smallp_intersect = cos(172.5/180*M_PI);
   smallp_ratio = 1.2;
   disA = 0.1;
+  disB = 0;
   limit_maxmin = 3.24;
   p2l_ratio = 225;
   edgea = 2;
@@ -427,4 +428,10 @@ bool FeatureExtraction::edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype
   }
   
   return true;
+}
+
+void FeatureExtraction::corner_reset(int plsize){
+    pl_corn.clear();
+    if(plsize > 0)
+        pl_corn.reserve(plsize);
 }
