@@ -4,6 +4,8 @@
 #define PCL_NO_PRECOMPILE
 #include <pcl/point_types.h>
 #include <Eigen/Core>
+#include <pcl/point_cloud.h>
+
 
 enum Feature{Nor, Poss_Plane, Real_Plane, Edge_Jump, Edge_Plane, Wire, ZeroPoint};
 enum Surround{Prev, Next};
@@ -69,3 +71,6 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (std::uint16_t, ambient, ambient)
     (std::uint32_t, range, range)
 )
+
+typedef pcl::PointXYZINormal PointType;
+typedef pcl::PointCloud<PointType> PointCloudXYZI;
