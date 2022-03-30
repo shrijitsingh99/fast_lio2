@@ -4,6 +4,7 @@
 #define RETURN0AND1 0x10
 
 Preprocess::Preprocess(std::weak_ptr<ros::NodeHandle> parent)
+  :feature_extraction(pl_corn, pl_surf, point_filter_num, blind, group_size, jump_up_limit, jump_down_limit, cos160, smallp_intersect, smallp_ratio, disA, disB, inf_bound, limit_maxmin, p2l_ratio, vx, vy, vz, edgea, edgeb)
 {
   auto node = parent.lock();
   if (!node) {
@@ -148,7 +149,7 @@ void Preprocess::oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
         types[i].dista = vx * vx + vy * vy + vz * vz;
       }
       types[linesize].range = sqrt(pl[linesize].x * pl[linesize].x + pl[linesize].y * pl[linesize].y);
-      give_feature(pl, types);
+      feature_extraction.give_feature(pl, types);
     }
   }
   else
@@ -294,7 +295,7 @@ void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
           types[i].dista = vx * vx + vy * vy + vz * vz;
         }
         types[linesize].range = sqrt(pl[linesize].x * pl[linesize].x + pl[linesize].y * pl[linesize].y);
-        give_feature(pl, types);
+        feature_extraction.give_feature(pl, types);
       }
     }
     else
@@ -356,7 +357,27 @@ void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
     }
 }
 
-void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &types)
+void Preprocess::pub_func(PointCloudXYZI &pl, const ros::Time &ct)
+{
+  pl.height = 1; pl.width = pl.size();
+  sensor_msgs::PointCloud2 output;
+  pcl::toROSMsg(pl, output);
+  output.header.frame_id = "livox";
+  output.header.stamp = ct;
+}
+
+FeatureExtraction::FeatureExtraction(PointCloudXYZI &pl_corn_, PointCloudXYZI &pl_surf_, int &point_filter_num_, double &blind_, int &group_size_, double &jump_up_limit_, double &jump_down_limit_, double &cos160_, double &smallp_intersect_, double &smallp_ratio_, double &disA_, double &disB_, double &inf_bound_, double &limit_maxmin_, double &p2l_ratio_, double &vx_, double &vy_, double &vz_, double &edgea_, double &edgeb_):
+pl_corn(pl_corn_), pl_surf(pl_surf_), point_filter_num(point_filter_num_), 
+blind(blind_), group_size(group_size_), jump_up_limit(jump_up_limit_), jump_down_limit(jump_down_limit_), 
+cos160(cos160_), 
+smallp_intersect(smallp_intersect_), smallp_ratio(smallp_ratio_), disA(disA_), 
+disB(disB_), inf_bound(inf_bound_), limit_maxmin(limit_maxmin_), p2l_ratio(p2l_ratio_), 
+vx(vx_), vy(vy_), vz(vz_), edgea(edgea_), edgeb(edgeb_)
+{}
+
+FeatureExtraction::~FeatureExtraction() {}
+
+void FeatureExtraction::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &types)
 {
   int plsize = pl.size();
   int plsize2;
@@ -430,52 +451,6 @@ void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &t
       i = i_nex;
       last_state = 0;
     }
-    // else if(plane_type == 0)
-    // {
-    //   if(last_state == 1)
-    //   {
-    //     uint i_nex_tem;
-    //     uint j;
-    //     for(j=last_i+1; j<=last_i_nex; j++)
-    //     {
-    //       uint i_nex_tem2 = i_nex_tem;
-    //       Eigen::Vector3d curr_direct2;
-
-    //       uint ttem = plane_judge(pl, types, j, i_nex_tem, curr_direct2);
-
-    //       if(ttem != 1)
-    //       {
-    //         i_nex_tem = i_nex_tem2;
-    //         break;
-    //       }
-    //       curr_direct = curr_direct2;
-    //     }
-
-    //     if(j == last_i+1)
-    //     {
-    //       last_state = 0;
-    //     }
-    //     else
-    //     {
-    //       for(uint k=last_i_nex; k<=i_nex_tem; k++)
-    //       {
-    //         if(k != i_nex_tem)
-    //         {
-    //           types[k].ftype = Real_Plane;
-    //         }
-    //         else
-    //         {
-    //           types[k].ftype = Poss_Plane;
-    //         }
-    //       }
-    //       i = i_nex_tem-1;
-    //       i_nex = i_nex_tem;
-    //       i2 = j-1;
-    //       last_state = 1;
-    //     }
-
-    //   }
-    // }
 
     last_i = i2;
     last_i_nex = i_nex;
@@ -670,16 +645,7 @@ void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &t
   }
 }
 
-void Preprocess::pub_func(PointCloudXYZI &pl, const ros::Time &ct)
-{
-  pl.height = 1; pl.width = pl.size();
-  sensor_msgs::PointCloud2 output;
-  pcl::toROSMsg(pl, output);
-  output.header.frame_id = "livox";
-  output.header.stamp = ct;
-}
-
-int Preprocess::plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct)
+int FeatureExtraction::plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct)
 {
   double group_dis = disA*types[i_cur].range + disB;
   group_dis = group_dis * group_dis;
@@ -779,7 +745,7 @@ int Preprocess::plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, ui
   return 1;
 }
 
-bool Preprocess::edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir)
+bool FeatureExtraction::edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir)
 {
   if(nor_dir == 0)
   {
