@@ -12,8 +12,8 @@ typedef MTK::vect<2, double> vect2;
 MTK_BUILD_MANIFOLD(state_ikfom,
 ((vect3, pos))
 ((SO3, rot))
-((SO3, offset_R_L_I))
-((vect3, offset_T_L_I))
+((SO3, lidar_to_imu_rot))
+((vect3, lidar_to_imu_trans))
 ((vect3, vel))
 ((vect3, bg))
 ((vect3, ba))

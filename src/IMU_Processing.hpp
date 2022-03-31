@@ -195,8 +195,8 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, esekfom::esekf<state_ikfom, 
   
   //state_inout.rot = Eye3d; // Exp(mean_acc.cross(V3D(0, 0, -1 / scale_gravity)));
   init_state.bg  = mean_gyr;
-  init_state.offset_T_L_I = Lidar_T_wrt_IMU;
-  init_state.offset_R_L_I = Lidar_R_wrt_IMU;
+  init_state.lidar_to_imu_trans = Lidar_T_wrt_IMU;
+  init_state.lidar_to_imu_rot = Lidar_R_wrt_IMU;
   kf_state.change_x(init_state);
 
   esekfom::esekf<state_ikfom, 12, input_ikfom>::cov init_P = kf_state.get_P();
@@ -322,7 +322,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf<state_ikf
       
       V3D P_i(it_pcl->x, it_pcl->y, it_pcl->z);
       V3D T_ei(pos_imu + vel_imu * dt + 0.5 * acc_imu * dt * dt - imu_state.pos);
-      V3D P_compensate = imu_state.offset_R_L_I.conjugate() * (imu_state.rot.conjugate() * (R_i * (imu_state.offset_R_L_I * P_i + imu_state.offset_T_L_I) + T_ei) - imu_state.offset_T_L_I);// not accurate!
+      V3D P_compensate = imu_state.lidar_to_imu_rot.conjugate() * (imu_state.rot.conjugate() * (R_i * (imu_state.lidar_to_imu_rot * P_i + imu_state.lidar_to_imu_trans) + T_ei) - imu_state.lidar_to_imu_trans);// not accurate!
       
       // save Undistorted points and their rotation
       it_pcl->x = P_compensate(0);
