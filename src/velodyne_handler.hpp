@@ -13,7 +13,6 @@ public:
   PointCloudXYZI process(const sensor_msgs::PointCloud2::ConstPtr & msg) override
   {
     pl_surf.clear();
-
     pcl::PointCloud<velodyne_ros::Point> pl_orig;
     pcl::fromROSMsg(*msg, pl_orig);
     int plsize = pl_orig.points.size();
@@ -46,28 +45,35 @@ public:
     }
 
     if (cfg_.feature_enabled) {
+      // Clear and setup buffers for each layer
       for (int i = 0; i < cfg_.N_SCANS; i++) {
         pl_buff[i].clear();
         pl_buff[i].reserve(plsize);
       }
-
+      // Set up buffers by going through all points in original data
       for (int i = 0; i < plsize; i++) {
+        // Set up new point to add, added_pt
         PointType added_pt;
         added_pt.normal_x = 0;
         added_pt.normal_y = 0;
         added_pt.normal_z = 0;
+        // Get layer for current point
         int layer = pl_orig.points[i].ring;
+        // Ignore points outside of expected rings
         if (layer >= cfg_.N_SCANS) {
           continue;
         }
+        // Copy data from original point to added_pt
         added_pt.x = pl_orig.points[i].x;
         added_pt.y = pl_orig.points[i].y;
         added_pt.z = pl_orig.points[i].z;
         added_pt.intensity = pl_orig.points[i].intensity;
-        added_pt.curvature = pl_orig.points[i].time * cfg_.time_unit_scale;         // units: ms
-
+        added_pt.curvature = pl_orig.points[i].time * cfg_.time_unit_scale; // curvature stores time; units: ms
+        // Compute offset if not provided
         if (!given_offset_time_) {
+          // Get angle in degrees
           double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957;
+          // Set up yaw and time for first point on layer
           if (is_first[layer]) {
             // printf("layer: %d; is first: %d", layer, is_first[layer]);
             yaw_fp[layer] = yaw_angle;
@@ -77,13 +83,13 @@ public:
             time_last[layer] = added_pt.curvature;
             continue;
           }
-
+          // Compute offset time for point
           if (yaw_angle <= yaw_fp[layer]) {
             added_pt.curvature = (yaw_fp[layer] - yaw_angle) / omega_l;
           } else {
             added_pt.curvature = (yaw_fp[layer] - yaw_angle + 360.0) / omega_l;
           }
-
+          // Add offset if off by a revolution
           if (added_pt.curvature < time_last[layer]) {
             added_pt.curvature += 360.0 / omega_l;
           }
@@ -94,13 +100,14 @@ public:
 
         pl_buff[layer].points.push_back(added_pt);
       }
-
+      // Run feature extraction for each layer
       for (int j = 0; j < cfg_.N_SCANS; j++) {
         PointCloudXYZI & pl = pl_buff[j];
         int linesize = pl.size();
         if (linesize < 2) {
           continue;
         }
+        // Set up types
         std::vector<orgtype> & types = typess[j];
         types.clear();
         types.resize(linesize);
@@ -114,26 +121,30 @@ public:
         }
         types[linesize].range = sqrt(
           pl[linesize].x * pl[linesize].x + pl[linesize].y * pl[linesize].y);
+        // Do feature extraction to update pl_surf
         feature_extraction.give_feature(pl, types);
       }
     } else {
+      // Set up pl_surf by going through all points in original data
       for (int i = 0; i < plsize; i++) {
+        // Set up new point to add, added_pt
         PointType added_pt;
-        // cout<<"!!!!!!"<<i<<" "<<plsize<<endl;
-
         added_pt.normal_x = 0;
         added_pt.normal_y = 0;
         added_pt.normal_z = 0;
+        // Copy data from original point to added_pt
         added_pt.x = pl_orig.points[i].x;
         added_pt.y = pl_orig.points[i].y;
         added_pt.z = pl_orig.points[i].z;
         added_pt.intensity = pl_orig.points[i].intensity;
         added_pt.curvature = pl_orig.points[i].time * cfg_.time_unit_scale;         // curvature unit: ms // cout<<added_pt.curvature<<endl;
-
+        // Compute offset if not provided
         if (!given_offset_time_) {
+          // Get layer for current point
           int layer = pl_orig.points[i].ring;
+          // Get angle in degrees
           double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957;
-
+          // Set up yaw and time for first point on layer
           if (is_first[layer]) {
             // printf("layer: %d; is first: %d", layer, is_first[layer]);
             yaw_fp[layer] = yaw_angle;
@@ -144,13 +155,13 @@ public:
             continue;
           }
 
-          // compute offset time
+          // Compute offset time for point
           if (yaw_angle <= yaw_fp[layer]) {
             added_pt.curvature = (yaw_fp[layer] - yaw_angle) / omega_l;
           } else {
             added_pt.curvature = (yaw_fp[layer] - yaw_angle + 360.0) / omega_l;
           }
-
+          // Add offset if off by a revolution
           if (added_pt.curvature < time_last[layer]) {
             added_pt.curvature += 360.0 / omega_l;
           }
@@ -158,7 +169,7 @@ public:
           yaw_last[layer] = yaw_angle;
           time_last[layer] = added_pt.curvature;
         }
-
+        // Get every n-th point if it's outside of blindspot and add to pl_surf
         if (i % cfg_.point_filter_num == 0) {
           if (added_pt.x * added_pt.x + added_pt.y * added_pt.y + added_pt.z * added_pt.z >
             (cfg_.blind * cfg_.blind))
