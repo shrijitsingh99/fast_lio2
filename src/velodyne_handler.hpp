@@ -97,12 +97,12 @@ public:
         }
         yaw_last[layer] = yaw_angle;
         time_last[layer] = added_pt.curvature;
-        // Update pl_buff
-        if (cfg_.feature_enabled)
-          pl_buff[layer].points.push_back(added_pt);
       }
-      // Get every n-th point if it's outside of blindspot and add to pl_surf
-      if(!cfg_.feature_enabled){
+      if (cfg_.feature_enabled){
+        // Update pl_buff
+        pl_buff[layer].points.push_back(added_pt);
+      }else{
+        // Get every n-th point if it's outside of blindspot and add to pl_surf
         if(i % cfg_.point_filter_num == 0) {
           if (added_pt.x * added_pt.x + added_pt.y * added_pt.y + added_pt.z * added_pt.z > (cfg_.blind * cfg_.blind)){
             pl_surf.points.push_back(added_pt);
