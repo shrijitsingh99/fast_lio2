@@ -53,6 +53,9 @@ public:
       for (int j = 0; j < cfg_.N_SCANS; j++) {
         PointCloudXYZI & pl = pl_buff[j];
         int linesize = pl.size();
+        if (linesize < 2) {
+          continue;
+        }
         vector<orgtype> & types = typess[j];
         types.clear();
         types.resize(linesize);
