@@ -143,6 +143,8 @@ geometry_msgs::PoseStamped msg_body_pose;
 
 shared_ptr<Preprocess> p_pre(new Preprocess());
 shared_ptr<ImuProcess> p_imu(new ImuProcess());
+
+double timediff_lidar_wrt_imu = 0.0;
 /**************************/
 
 /*** Map variables ***/
@@ -701,7 +703,7 @@ int main(int argc, char** argv)
     nh.param<bool>("publish/scan_bodyframe_pub_en",scan_body_pub_en, true);
 
     nh.param<int>("max_iteration",NUM_MAX_ITERATIONS,4);
-    nh.param<string>("map_file_name",map_file_name,"scans.pcd");
+    nh.param<string>("pcd_save/map_file_name",map_file_name,"scans.pcd");
     nh.param<string>("common/lid_topic",lid_topic,"/livox/lidar");
     nh.param<string>("common/imu_topic", imu_topic,"/livox/imu");
     nh.param<bool>("common/time_sync_en", time_sync_en, false);

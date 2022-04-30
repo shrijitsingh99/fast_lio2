@@ -1,11 +1,16 @@
 <launch>
   <!-- Launch file for velodyne16 VLP-16 LiDAR -->
+   <!-- Velodyne Packets to PointCloud -->
+    <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
+        <arg name="max_range" default="7.5" />
+    </include>
 
     <arg name="rviz" default="true" />
 
     <rosparam command="load" file="$(find fast_lio)/config/velodyne.yaml" />
 
     <param name="feature_extract_enable" type="bool" value="0"/>
+    <param name="map_file_name" type="string" value="tenn_scan1.pcd" />
     <param name="point_filter_num" type="int" value="4"/>
     <param name="max_iteration" type="int" value="3" />
     <param name="filter_size_surf" type="double" value="0.5" />
