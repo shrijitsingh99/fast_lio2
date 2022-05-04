@@ -1,8 +1,6 @@
 build
-Log/*.png
-Log/*.txt
-Log/*.csv
-Log/*.pdf
+fast_lio2/Log/
+fast_lio2/doc/
 .vscode/c_cpp_properties.json
 .vscode/settings.json
-PCD/*.pcd
+fast_lio2/PCD/*.pcd
