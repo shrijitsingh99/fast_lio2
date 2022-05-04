@@ -5,7 +5,7 @@
 2. Automaticaly initialized at most steady environments;
 3. Parallel KD-Tree Search to decrease the computation;
 
-## FAST-LIO 2.0 (2021-07-05 Update)
+## FAST-LIO 2.0 
 <!-- ![image](doc/real_experiment2.gif) -->
 
 
